@@ -1,0 +1,20 @@
+IMAGE TOOLKIT - How to run it
+=============================
+
+1. Double-click ImageToolkit.exe.
+
+2. The first time, Windows may show a blue box:
+   "Windows protected your PC".
+   This is normal for a new app. Click "More info", then "Run anyway".
+
+3. The app opens. It has three tabs:
+   - Convert & Resize : change image size or file type (JPG, PNG, etc.)
+   - Merge            : combine images into a PDF, join PDFs, or stack images
+   - Split PDF        : break a PDF into pages or pull out a page range
+
+   In any tab you can drag files onto the list, or click "Add files".
+
+You do NOT need to install anything. Nothing else is required.
+
+If Windows or antivirus blocks the file, it is only because the app is new and
+not digitally signed - it is safe to allow it.
