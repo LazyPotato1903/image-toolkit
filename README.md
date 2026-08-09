@@ -43,7 +43,17 @@ Only if you later want a Start-menu/desktop shortcut: do Option 1, install **Inn
 
 ---
 
-## Share it with other people (minimal setup for them)
+## Use it as a website (no install at all)
+
+There's a browser version in **`docs/index.html`** — same tools, running entirely in
+the visitor's browser (files never leave their device). Host it free on GitHub Pages
+and share one link. See **`WEBSITE_GUIDE.md`**. Once enabled, your link is:
+
+    https://lazypotato1903.github.io/image-toolkit/
+
+You can also just double-click `docs/index.html` to use it offline on your own PC.
+
+## Share the desktop app with other people (minimal setup for them)
 
 However you build it, other people only ever need the single **`ImageToolkit.exe`** —
 they double-click it, no Python and no install. Two ways to produce that file:

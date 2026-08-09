@@ -17,3 +17,7 @@ Output/
 # OS
 Thumbs.db
 .DS_Store
+
+# temp
+_app.js
+docs/_app.js

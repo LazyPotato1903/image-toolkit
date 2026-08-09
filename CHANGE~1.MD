@@ -3,6 +3,16 @@
 All notable changes to Image Toolkit are recorded here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.0] - 2026-08-09
+
+### Added
+- Web version (`docs/index.html`): a single-page browser app with the same tools — Convert & Resize, Merge (images→PDF, merge PDFs, stack images), and Split PDF. Runs 100% client-side (pdf-lib + JSZip + Canvas); files never leave the visitor's device.
+- `WEBSITE_GUIDE.md`: steps to turn on free GitHub Pages hosting and get a public link.
+- Batch image conversion downloads as a ZIP; split outputs (per-page / every-N) download as a ZIP.
+
+### Notes
+- In-browser image output is JPG/PNG/WEBP (BMP/TIFF are desktop-only).
+
 ## [1.3.0] - 2026-08-07
 
 ### Added
