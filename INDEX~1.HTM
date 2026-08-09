@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Image Toolkit</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232563eb'/%3E%3Crect x='24' y='30' width='52' height='42' rx='6' fill='white'/%3E%3Ccircle cx='40' cy='45' r='6' fill='%23facc15'/%3E%3Cpath d='M28 66 L44 50 L58 66 Z' fill='%2322c55e'/%3E%3C/svg%3E" />
+<!-- All processing happens in the browser. Libraries loaded from a CDN. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --blue:#2563eb; --sky:#0ea5e9; --ink:#0f172a; --muted:#64748b;
+    --line:#e2e8f0; --bg:#f8fafc; --card:#ffffff; --ok:#16a34a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+       color:var(--ink);background:var(--bg)}
+  header{background:linear-gradient(135deg,var(--blue),var(--sky));color:#fff;
+         padding:22px 20px}
+  .wrap{max-width:900px;margin:0 auto;padding:0 16px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand img{width:46px;height:46px;border-radius:10px}
+  .brand h1{margin:0;font-size:1.5rem}
+  .brand p{margin:2px 0 0;opacity:.9;font-size:.9rem}
+  .privacy{margin-top:12px;font-size:.82rem;background:rgba(255,255,255,.15);
+           display:inline-block;padding:6px 12px;border-radius:999px}
+  nav{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0}
+  .tab{border:1px solid var(--line);background:var(--card);padding:10px 16px;
+       border-radius:10px;cursor:pointer;font-weight:600;color:var(--muted)}
+  .tab.active{color:#fff;background:var(--blue);border-color:var(--blue)}
+  .panel{display:none;background:var(--card);border:1px solid var(--line);
+         border-radius:14px;padding:18px;margin-bottom:24px}
+  .panel.active{display:block}
+  h2{margin:0 0 6px;font-size:1.15rem}
+  .sub{color:var(--muted);font-size:.9rem;margin:0 0 14px}
+  .drop{border:2px dashed #b6c6e6;border-radius:12px;padding:26px;text-align:center;
+        color:var(--muted);cursor:pointer;transition:.15s;background:#fbfdff}
+  .drop.over{border-color:var(--blue);background:#eef4ff;color:var(--blue)}
+  .files{list-style:none;margin:12px 0;padding:0}
+  .files li{display:flex;align-items:center;justify-content:space-between;
+            padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;
+            font-size:.9rem;background:#fff}
+  .files .x{color:#ef4444;cursor:pointer;border:none;background:none;font-size:1rem}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  label{font-size:.9rem;font-weight:600}
+  select,input[type=number],input[type=text]{padding:8px;border:1px solid var(--line);
+        border-radius:8px;font-size:.9rem}
+  input[type=number]{width:90px}
+  .radio{display:flex;gap:14px;flex-wrap:wrap}
+  .radio label{font-weight:500;display:flex;align-items:center;gap:5px}
+  button.go{background:var(--blue);color:#fff;border:none;padding:11px 20px;
+            border-radius:10px;font-weight:700;cursor:pointer;font-size:.95rem}
+  button.go:disabled{opacity:.5;cursor:not-allowed}
+  .hint{font-size:.82rem;color:var(--muted);margin-top:6px}
+  .status{margin-top:12px;font-size:.9rem;color:var(--ok);min-height:1.2em}
+  .status.err{color:#ef4444}
+  .results{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+  .results a{color:var(--blue);font-size:.9rem}
+  .muted{color:var(--muted)}
+  footer{color:var(--muted);font-size:.82rem;text-align:center;padding:20px}
+  .disabledblock{opacity:.45;pointer-events:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <svg width="46" height="46" viewBox="0 0 100 100" style="border-radius:10px" aria-label="logo">
+        <rect width="100" height="100" rx="22" fill="#1d4ed8"/>
+        <rect x="24" y="30" width="52" height="42" rx="6" fill="#ffffff"/>
+        <circle cx="40" cy="45" r="6" fill="#facc15"/>
+        <path d="M28 66 L44 50 L58 66 Z" fill="#22c55e"/>
+        <path d="M50 66 L62 54 L74 66 Z" fill="#16a34a"/>
+      </svg>
+      <div>
+        <h1>Image Toolkit</h1>
+        <p>Resize &amp; convert images, and merge or split PDFs — right in your browser.</p>
+      </div>
+    </div>
+    <div class="privacy">🔒 Your files never leave your device. Everything runs locally.</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav>
+    <button class="tab active" data-tab="convert">Convert &amp; Resize</button>
+    <button class="tab" data-tab="merge">Merge</button>
+    <button class="tab" data-tab="split">Split PDF</button>
+  </nav>
+
+  <!-- ============ CONVERT & RESIZE ============ -->
+  <section class="panel active" id="panel-convert">
+    <h2>Convert &amp; Resize images</h2>
+    <p class="sub">Change format or size for one or many images. Output: JPG, PNG or WEBP.</p>
+    <div class="drop" id="conv-drop">Drag images here, or click to choose</div>
+    <input type="file" id="conv-input" accept="image/*" multiple hidden />
+    <ul class="files" id="conv-list"></ul>
+
+    <div class="row">
+      <label>Save as
+        <select id="conv-format">
+          <option value="image/jpeg">JPG</option>
+          <option value="image/png">PNG</option>
+          <option value="image/webp">WEBP</option>
+        </select>
+      </label>
+    </div>
+    <div class="row">
+      <label>Resize:</label>
+      <div class="radio">
+        <label><input type="radio" name="conv-mode" value="none" checked/> None</label>
+        <label><input type="radio" name="conv-mode" value="dimensions"/> By dimensions</label>
+        <label><input type="radio" name="conv-mode" value="target"/> By target size</label>
+      </div>
+    </div>
+    <div class="row" id="conv-dim">
+      <label>Width <input type="number" id="conv-w" min="1" placeholder="auto"/></label>
+      <label>Height <input type="number" id="conv-h" min="1" placeholder="auto"/></label>
+      <label style="font-weight:500"><input type="checkbox" id="conv-aspect" checked/> Keep aspect ratio</label>
+    </div>
+    <div class="row" id="conv-target">
+      <label>Target size <input type="number" id="conv-kb" min="1" value="500"/> KB</label>
+      <span class="hint">Works with JPG or WEBP.</span>
+    </div>
+
+    <button class="go" id="conv-run">Convert</button>
+    <div class="status" id="conv-status"></div>
+    <div class="results" id="conv-results"></div>
+  </section>
+
+  <!-- ============ MERGE ============ -->
+  <section class="panel" id="panel-merge">
+    <h2>Merge</h2>
+    <p class="sub">Combine files into one.</p>
+    <div class="row">
+      <div class="radio">
+        <label><input type="radio" name="merge-mode" value="img2pdf" checked/> Images → one PDF</label>
+        <label><input type="radio" name="merge-mode" value="mergepdf"/> Merge PDFs</label>
+        <label><input type="radio" name="merge-mode" value="stack"/> Images → one long image</label>
+      </div>
+    </div>
+    <div class="drop" id="merge-drop">Drag files here, or click to choose</div>
+    <input type="file" id="merge-input" multiple hidden />
+    <ul class="files" id="merge-list"></ul>
+
+    <div class="row" id="merge-stackopts">
+      <label>Direction
+        <select id="merge-direction">
+          <option value="vertical">Vertical (top to bottom)</option>
+          <option value="horizontal">Horizontal (side by side)</option>
+        </select>
+      </label>
+    </div>
+
+    <button class="go" id="merge-run">Merge</button>
+    <div class="status" id="merge-status"></div>
+    <div class="results" id="merge-results"></div>
+  </section>
+
+  <!-- ============ SPLIT ============ -->
+  <section class="panel" id="panel-split">
+    <h2>Split PDF</h2>
+    <p class="sub">Break a PDF into pages or pull out a range.</p>
+    <div class="drop" id="split-drop">Drag a PDF here, or click to choose</div>
+    <input type="file" id="split-input" accept="application/pdf" hidden />
+    <ul class="files" id="split-list"></ul>
+    <p class="hint" id="split-info"></p>
+
+    <div class="row">
+      <div class="radio">
+        <label><input type="radio" name="split-mode" value="all" checked/> One PDF per page</label>
+        <label><input type="radio" name="split-mode" value="range"/> Page range</label>
+        <label><input type="radio" name="split-mode" value="every"/> Every N pages</label>
+      </div>
+    </div>
+    <div class="row" id="split-range">
+      <label>From <input type="number" id="split-start" min="1" value="1"/></label>
+      <label>To <input type="number" id="split-end" min="1" value="1"/></label>
+    </div>
+    <div class="row" id="split-every">
+      <label><input type="number" id="split-n" min="1" value="2"/> pages per file</label>
+    </div>
+
+    <button class="go" id="split-run">Split</button>
+    <div class="status" id="split-status"></div>
+    <div class="results" id="split-results"></div>
+  </section>
+</main>
+
+<footer>
+  Image Toolkit • runs entirely in your browser • no uploads, no accounts
+</footer>
+
+<script>
+"use strict";
+const { PDFDocument } = PDFLib;
+
+/* ---------- tiny helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const baseName = (n) => n.replace(/\.[^.]+$/, "");
+const extFor = (mime) => ({ "image/jpeg":".jpg", "image/png":".png", "image/webp":".webp" }[mime] || ".img");
+
+function setStatus(el, msg, isErr){ el.textContent = msg; el.className = "status" + (isErr ? " err" : ""); }
+
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+function resultLink(container, blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.textContent = "⬇ " + filename;
+  container.appendChild(a);
+}
+
+function loadImage(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { resolve(img); setTimeout(()=>URL.revokeObjectURL(url),4000); };
+    img.onerror = () => reject(new Error("Could not read image: " + file.name));
+    img.src = url;
+  });
+}
+
+function canvasToBlob(canvas, mime, quality){
+  return new Promise((resolve) => canvas.toBlob((b) => resolve(b), mime, quality));
+}
+
+function drawResized(img, w, h){
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  // white background so transparency doesn't turn black in JPG
+  ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,w,h);
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas;
+}
+
+/* ---------- reusable file-list manager with drag & drop ---------- */
+function makeFileArea(dropId, inputId, listId, onChange){
+  const drop = $(dropId), input = $(inputId), list = $(listId);
+  const files = [];
+  function render(){
+    list.innerHTML = "";
+    files.forEach((f, i) => {
+      const li = document.createElement("li");
+      const span = document.createElement("span");
+      span.textContent = f.name;
+      const x = document.createElement("button");
+      x.className = "x"; x.textContent = "✕"; x.title = "Remove";
+      x.onclick = () => { files.splice(i,1); render(); onChange && onChange(files); };
+      li.appendChild(span); li.appendChild(x);
+      list.appendChild(li);
+    });
+    onChange && onChange(files);
+  }
+  function add(fileList){
+    for (const f of fileList) files.push(f);
+    render();
+  }
+  drop.onclick = () => input.click();
+  input.onchange = () => { add(input.files); input.value = ""; };
+  ["dragenter","dragover"].forEach(ev =>
+    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave","drop"].forEach(ev =>
+    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => { if (e.dataTransfer && e.dataTransfer.files) add(e.dataTransfer.files); });
+  return { files, clear(){ files.length = 0; render(); }, single(){ return files[0]; } };
+}
+
+/* ---------- tab switching ---------- */
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    $("panel-" + btn.dataset.tab).classList.add("active");
+  };
+});
+
+/* ================= CONVERT & RESIZE ================= */
+const convArea = makeFileArea("conv-drop","conv-input","conv-list");
+
+function convMode(){ return document.querySelector('input[name="conv-mode"]:checked').value; }
+function refreshConvOpts(){
+  $("conv-dim").classList.toggle("disabledblock", convMode() !== "dimensions");
+  $("conv-target").classList.toggle("disabledblock", convMode() !== "target");
+}
+document.querySelectorAll('input[name="conv-mode"]').forEach(r => r.onchange = refreshConvOpts);
+refreshConvOpts();
+
+async function encodeToTarget(img, mime, targetBytes){
+  // binary-search quality, then downscale if still too big
+  let scale = 1;
+  for (let attempt = 0; attempt < 10; attempt++){
+    const w = Math.max(1, Math.round(img.naturalWidth * scale));
+    const h = Math.max(1, Math.round(img.naturalHeight * scale));
+    const canvas = drawResized(img, w, h);
+    let lo = 0.1, hi = 0.95, best = null;
+    for (let i = 0; i < 8; i++){
+      const q = (lo + hi) / 2;
+      const blob = await canvasToBlob(canvas, mime, q);
+      if (blob && blob.size <= targetBytes){ best = blob; lo = q + 0.01; }
+      else hi = q - 0.01;
+    }
+    if (best) return best;
+    scale *= 0.85; // shrink and retry
+  }
+  const canvas = drawResized(img, img.naturalWidth, img.naturalHeight);
+  return await canvasToBlob(canvas, mime, 0.1);
+}
+
+$("conv-run").onclick = async () => {
+  const files = convArea.files, status = $("conv-status"), out = $("conv-results");
+  out.innerHTML = "";
+  if (!files.length){ setStatus(status, "Add at least one image first.", true); return; }
+  const mime = $("conv-format").value, mode = convMode();
+  const zip = files.length > 1 ? new JSZip() : null;
+  setStatus(status, "Working...");
+  try{
+    for (let i = 0; i < files.length; i++){
+      const f = files[i];
+      const img = await loadImage(f);
+      let blob;
+      if (mode === "target"){
+        const kb = parseInt($("conv-kb").value, 10) || 500;
+        if (mime === "image/png"){ setStatus(status, "Target size needs JPG or WEBP.", true); return; }
+        blob = await encodeToTarget(img, mime, kb * 1024);
+      } else {
+        let w = img.naturalWidth, h = img.naturalHeight;
+        if (mode === "dimensions"){
+          const iw = parseInt($("conv-w").value,10), ih = parseInt($("conv-h").value,10);
+          const keep = $("conv-aspect").checked;
+          if (keep){
+            if (iw && ih){ const r = Math.min(iw/w, ih/h); w = Math.round(w*r); h = Math.round(h*r); }
+            else if (iw){ h = Math.round(h * (iw/w)); w = iw; }
+            else if (ih){ w = Math.round(w * (ih/h)); h = ih; }
+          } else { if (iw) w = iw; if (ih) h = ih; }
+        }
+        const canvas = drawResized(img, w, h);
+        blob = await canvasToBlob(canvas, mime, 0.92);
+      }
+      const name = baseName(f.name) + extFor(mime);
+      if (zip) zip.file(name, blob);
+      else resultLink(out, blob, name);
+      setStatus(status, `Converted ${i+1}/${files.length}...`);
+    }
+    if (zip){
+      const z = await zip.generateAsync({ type:"blob" });
+      resultLink(out, z, "converted-images.zip");
+    }
+    setStatus(status, "Done. Click the link(s) below to save.");
+  }catch(e){ setStatus(status, e.message || String(e), true); }
+};
+
+/* ================= MERGE ================= */
+const mergeArea = makeFileArea("merge-drop","merge-input","merge-list");
+function mergeMode(){ return document.querySelector('input[name="merge-mode"]:checked').value; }
+function refreshMergeOpts(){
+  const m = mergeMode();
+  $("merge-stackopts").style.display = (m === "stack") ? "flex" : "none";
+  $("merge-input").setAttribute("accept", m === "mergepdf" ? "application/pdf" : "image/*");
+}
+document.querySelectorAll('input[name="merge-mode"]').forEach(r => r.onchange = refreshMergeOpts);
+refreshMergeOpts();
+
+async function imageToPngBytes(file){
+  const img = await loadImage(file);
+  const canvas = drawResized(img, img.naturalWidth, img.naturalHeight);
+  const blob = await canvasToBlob(canvas, "image/png", 1);
+  return new Uint8Array(await blob.arrayBuffer());
+}
+
+$("merge-run").onclick = async () => {
+  const files = mergeArea.files, status = $("merge-status"), out = $("merge-results");
+  out.innerHTML = "";
+  const mode = mergeMode();
+  if (files.length < 2){ setStatus(status, "Add at least two files.", true); return; }
+  setStatus(status, "Working...");
+  try{
+    if (mode === "img2pdf"){
+      const pdf = await PDFDocument.create();
+      for (const f of files){
+        const png = await imageToPngBytes(f);
+        const emb = await pdf.embedPng(png);
+        const page = pdf.addPage([emb.width, emb.height]);
+        page.drawImage(emb, { x:0, y:0, width:emb.width, height:emb.height });
+      }
+      const bytes = await pdf.save();
+      resultLink(out, new Blob([bytes], {type:"application/pdf"}), "merged.pdf");
+    } else if (mode === "mergepdf"){
+      const merged = await PDFDocument.create();
+      for (const f of files){
+        const src = await PDFDocument.load(await f.arrayBuffer());
+        const pages = await merged.copyPages(src, src.getPageIndices());
+        pages.forEach(p => merged.addPage(p));
+      }
+      const bytes = await merged.save();
+      resultLink(out, new Blob([bytes], {type:"application/pdf"}), "merged.pdf");
+    } else { // stack images
+      const imgs = [];
+      for (const f of files) imgs.push(await loadImage(f));
+      const dir = $("merge-direction").value;
+      let W, H;
+      if (dir === "vertical"){ W = Math.max(...imgs.map(i=>i.naturalWidth)); H = imgs.reduce((s,i)=>s+i.naturalHeight,0); }
+      else { W = imgs.reduce((s,i)=>s+i.naturalWidth,0); H = Math.max(...imgs.map(i=>i.naturalHeight)); }
+      const canvas = document.createElement("canvas");
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,W,H);
+      let x = 0, y = 0;
+      for (const im of imgs){
+        if (dir === "vertical"){ ctx.drawImage(im, Math.round((W-im.naturalWidth)/2), y); y += im.naturalHeight; }
+        else { ctx.drawImage(im, x, Math.round((H-im.naturalHeight)/2)); x += im.naturalWidth; }
+      }
+      const blob = await canvasToBlob(canvas, "image/png", 1);
+      resultLink(out, blob, "stacked.png");
+    }
+    setStatus(status, "Done. Click the link below to save.");
+  }catch(e){ setStatus(status, e.message || String(e), true); }
+};
+
+/* ================= SPLIT ================= */
+let splitDoc = null, splitPages = 0;
+const splitArea = makeFileArea("split-drop","split-input","split-list", async (files) => {
+  splitDoc = null; splitPages = 0; $("split-info").textContent = "";
+  if (!files.length) return;
+  try{
+    const bytes = await files[0].arrayBuffer();
+    splitDoc = await PDFDocument.load(bytes);
+    splitPages = splitDoc.getPageCount();
+    $("split-info").textContent = splitPages + " page(s) in this PDF.";
+    $("split-end").value = splitPages;
+  }catch(e){ $("split-info").textContent = "Could not read this PDF."; }
+});
+function splitMode(){ return document.querySelector('input[name="split-mode"]:checked').value; }
+function refreshSplitOpts(){
+  $("split-range").style.display = splitMode()==="range" ? "flex" : "none";
+  $("split-every").style.display = splitMode()==="every" ? "flex" : "none";
+}
+document.querySelectorAll('input[name="split-mode"]').forEach(r => r.onchange = refreshSplitOpts);
+refreshSplitOpts();
+
+async function onePageDoc(srcDoc, index){
+  const doc = await PDFDocument.create();
+  const [p] = await doc.copyPages(srcDoc, [index]);
+  doc.addPage(p);
+  return new Blob([await doc.save()], {type:"application/pdf"});
+}
+
+$("split-run").onclick = async () => {
+  const status = $("split-status"), out = $("split-results"); out.innerHTML = "";
+  const f = splitArea.files[0];
+  if (!f || !splitDoc){ setStatus(status, "Choose a PDF first.", true); return; }
+  const mode = splitMode(), base = baseName(f.name);
+  setStatus(status, "Working...");
+  try{
+    if (mode === "range"){
+      const s = parseInt($("split-start").value,10), e = parseInt($("split-end").value,10);
+      if (!(s>=1 && e>=s && e<=splitPages)){ setStatus(status, `Enter a range within 1–${splitPages}.`, true); return; }
+      const doc = await PDFDocument.create();
+      const idx = []; for (let i=s-1;i<=e-1;i++) idx.push(i);
+      const pages = await doc.copyPages(splitDoc, idx);
+      pages.forEach(p => doc.addPage(p));
+      resultLink(out, new Blob([await doc.save()],{type:"application/pdf"}), `${base}_p${s}-${e}.pdf`);
+    } else {
+      const zip = new JSZip();
+      if (mode === "all"){
+        const width = String(splitPages).length;
+        for (let i=0;i<splitPages;i++){
+          zip.file(`${base}_p${String(i+1).padStart(width,"0")}.pdf`, await onePageDoc(splitDoc, i));
+          setStatus(status, `Page ${i+1}/${splitPages}...`);
+        }
+      } else { // every N
+        const n = parseInt($("split-n").value,10) || 1;
+        let part = 0;
+        for (let start=0; start<splitPages; start+=n){
+          part++;
+          const doc = await PDFDocument.create();
+          const idx = []; for (let i=start; i<Math.min(start+n,splitPages); i++) idx.push(i);
+          const pages = await doc.copyPages(splitDoc, idx);
+          pages.forEach(p => doc.addPage(p));
+          zip.file(`${base}_part${part}.pdf`, new Blob([await doc.save()],{type:"application/pdf"}));
+        }
+      }
+      const z = await zip.generateAsync({ type:"blob" });
+      resultLink(out, z, `${base}_split.zip`);
+    }
+    setStatus(status, "Done. Click the link below to save.");
+  }catch(e){ setStatus(status, e.message || String(e), true); }
+};
+</script>
+</body>
+</html>
